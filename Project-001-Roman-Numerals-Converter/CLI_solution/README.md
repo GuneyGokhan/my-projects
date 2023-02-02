@@ -66,8 +66,22 @@ LATEST_AMI=$(aws ssm get-parameters --names /aws/service/ami-amazon-linux-latest
 ```
 
 - Now we can run the instance with CLI command. (Do not forget to create userdata.sh under "/home/ec2-user/" folder before run this command)
-
 ```bash
+vim userdata.sh
+#! /bin/bash
+yum update -y
+yum install python3 -y
+pip3 install flask
+cd /home/ec2-user
+FOLDER="https://raw.githubusercontent.com/GuneyGokhan/my-projects/main/Project-001-Roman-Numerals-Converter/"
+wget ${FOLDER}/app.py
+mkdir templates && cd templates
+wget ${FOLDER}/templates/index.html
+wget ${FOLDER}/templates/result.html
+cd ..
+python3 app.py
+
+
 aws ec2 run-instances --image-id $LATEST_AMI --count 1 --instance-type t2.micro --key-name mldev --security-groups roman_numbers_sec_grp --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=roman_numbers}]' --user-data file:///home/ec2-user/userdata.sh
 or
 
@@ -75,7 +89,7 @@ aws ec2 run-instances \
     --image-id $LATEST_AMI \
     --count 1 \
     --instance-type t2.micro \
-    --key-name okt-aws # write your key-namewithout .pem \
+    --key-name firstkey
     --security-groups roman_numbers_sec_grp \
     --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=roman_numbers}]' \
     --user-data file:///home/ec2-user/userdata.sh
