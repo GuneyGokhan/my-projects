@@ -93,4 +93,8 @@ Outputs:
     Value: !GetAtt MyCloudfront.DomainName
   FullDomainName:
     Description: Full Domain Name of my Application
+<<<<<<< HEAD
     Value: !Ref KittensSubDomainName
+=======
+    Value: !Ref KittensSubDomainName
+>>>>>>> 0eea54351547b535f61b474f4890a3d5d04b66e6
