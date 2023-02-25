@@ -1,56 +1,53 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: |
   Cloudformation Template for kittens carousel static website deploy on s3 through cloudfront and route 53
-
-
 Parameters:
-  DomainName:
+  HostedZoneName:
     Description: DNS Name of existing Amazon Route 53 hosted zone. exp. clarusway.us
     Type: AWS::Route53::HostedZone::Id
-  
-  KittensDomainName:
+
+  KittensSubDomainName:
     Description: Full domain name for the App. ex. kittens.clarusway.us
     Type: String
     AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
 
 Resources:
-  KittensBucket:
+  MyBucket:
     Type: "AWS::S3::Bucket"
     Properties:
       AccessControl: PublicRead
-      BucketName: !Ref KittensDomainName
+      BucketName: !Ref KittensSubDomainName
       WebsiteConfiguration:
         IndexDocument: index.html
-  
-  KittensBucketPolicy:
+ 
+  MyBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref KittensBucket 
+      Bucket: !Ref MyBucket 
       PolicyDocument: 
         Statement: 
           - Sid: PublicReadGetObject
             Effect: Allow
             Principal: '*'
             Action: s3:GetObject
-            Resource: !Join ['', ['arn:aws:s3:::', !Ref 'KittensBucket', /*]] # 
-  
-  KittensCertificate:
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref 'MyBucket', /*]]
+
+  MyCertificate:
     Type: "AWS::CertificateManager::Certificate"
     Properties:
       CertificateTransparencyLoggingPreference: ENABLED 
-
-      DomainName: !Ref KittensDomainName 
+      DomainName: !Ref KittensSubDomainName
       DomainValidationOptions:
-        - DomainName: !Ref KittensDomainName
-          HostedZoneId: !Ref DomainName
-      ValidationMethod: DNS  
+        - DomainName: !Ref KittensSubDomainName
+          HostedZoneId: !Ref HostedZoneName
+      ValidationMethod: DNS 
   
-  KittensCloudfront:
+  MyCloudfront:
     Type: "AWS::CloudFront::Distribution" 
     Properties:
       DistributionConfig:
         Aliases:
-        - !Ref KittensDomainName 
+        - !Ref KittensSubDomainName
         Comment: Cloudfront Distribution pointing to Kittens S3 bucket
         DefaultCacheBehavior:
           AllowedMethods:  
@@ -62,38 +59,38 @@ Resources:
             Cookies:
               Forward: none 
           TargetOriginId: KittensOrigin  
-          ViewerProtocolPolicy: allow-all
-        DefaultRootObject: index.html
+          ViewerProtocolPolicy: allow-all 
+        DefaultRootObject: index.html   
         Enabled: true
         HttpVersion: 'http2'
         Origins: 
-        - DomainName: !Select [2, !Split ["/", !GetAtt KittensBucket.WebsiteURL]] 
+        - DomainName: !Select [2, !Split ["/", !GetAtt MyBucket.WebsiteURL]] 
           Id: KittensOrigin
           CustomOriginConfig: 
             OriginProtocolPolicy: http-only
         PriceClass: PriceClass_All
         ViewerCertificate:  
-          AcmCertificateArn: !Ref KittensCertificate
+          AcmCertificateArn: !Ref MyCertificate
           SslSupportMethod: sni-only 
   
-  KittenDNSName: 
+  MyRecordName:
     Type: AWS::Route53::RecordSetGroup
-    Properties:
-      HostedZoneId: !Ref DomainName 
-      RecordSets: 
-        - Name: !Ref KittensDomainName
+    Properties:      
+      HostedZoneId: Z08348542LMKDSH94CCW6
+      RecordSets:
+        - Name: !Ref KittensSubDomainName
           Type: A
           AliasTarget:
-            HostedZoneId: Z2FDTNDAQYW2 #Z03476341Z5SQLQVNAWJ1 
-            DNSName: !GetAtt KittensCloudfront.DomainName
+            DNSName: !GetAtt MyCloudfront.DomainName
+            HostedZoneId: Z2FDTNDATAQYW2
 
 Outputs:
   BucketName: 
     Description: S3 Bucket URL for Kittens Website
-    Value: !GetAtt KittensBucket.WebsiteURL
+    Value: !GetAtt MyBucket.WebsiteURL
   CloudfrontEndpoint:
     Description: Endpoint for Kittens Cloudfront
-    Value: !GetAtt KittensCloudfront.DomainName
+    Value: !GetAtt MyCloudfront.DomainName
   FullDomainName:
     Description: Full Domain Name of my Application
-    Value: !Ref KittensDomainName
+    Value: !Ref KittensSubDomainName
